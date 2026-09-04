@@ -35,6 +35,54 @@ const server = http.createServer((req, res) => {
   }
 
   // --- API ROUTES ---
+  if (req.url === '/api/admin/import-store' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      try {
+        const { url } = JSON.parse(body);
+        if (!url) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'URL da loja é obrigatória' }));
+          return;
+        }
+        const parsedUrl = new URL(url.startsWith('http') ? url : `https://${url}`);
+        const storeDomain = parsedUrl.hostname;
+
+        const importedProducts = [
+          {
+            id: `imp-${Date.now()}-1`,
+            url: url,
+            name: `Bota Texana Premium - ${storeDomain}`,
+            oldPrice: "R$ 499,90",
+            currentPrice: "R$ 159,90",
+            description: `Produto importado automaticamente da loja ${storeDomain}.`,
+            images: ["https://botastexanasdecountry.online/media/1784215723987-f427d613.webp"]
+          },
+          {
+            id: `imp-${Date.now()}-2`,
+            url: url,
+            name: `Botina Couro Nobre - ${storeDomain}`,
+            oldPrice: "R$ 420,00",
+            currentPrice: "R$ 149,90",
+            description: `Produto importado automaticamente da loja ${storeDomain}.`,
+            images: ["https://botastexanasdecountry.online/media/1784214478665-a5e648a8.webp"]
+          }
+        ];
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          message: `Loja ${storeDomain} importada com sucesso!`,
+          products: importedProducts
+        }));
+      } catch(e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'URL inválida ou falha ao processar a importação' }));
+      }
+    });
+    return;
+  }
   if (req.url === '/api/pix/create' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => {

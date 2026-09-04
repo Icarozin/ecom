@@ -597,23 +597,24 @@ function updateHeaderCart() {
 // ==========================================================================
 window.addEventListener('hashchange', renderView);
 window.addEventListener('load', () => {
+  applyStoreSettings();
   updateHeaderCart();
   renderView();
 });
 
 function renderView() {
+  applyStoreSettings();
   const appEl = document.getElementById('app');
   if (!appEl) return;
 
-  // Mostra loader
   appEl.innerHTML = `<div class="loader-container"><div class="loader"></div></div>`;
-
   const hash = window.location.hash || '#/';
   
-  // Roteamento
   setTimeout(() => {
     if (hash === '#/' || hash === '') {
       renderHome(appEl);
+    } else if (hash === '#/admin') {
+      renderAdminPage(appEl);
     } else if (hash.startsWith('#/produto/')) {
       const pId = hash.split('#/produto/')[1];
       renderProductDetail(appEl, pId);
@@ -634,9 +635,226 @@ function renderView() {
     } else {
       renderNotFound(appEl);
     }
-    // Rola para o topo a cada transição
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, 150);
+}
+
+// ==========================================================================
+// PAINEL ADMINISTRATIVO
+// ==========================================================================
+function renderAdminPage(container) {
+  const settings = getStoreSettings();
+  
+  let productRows = '';
+  PRODUCTS.forEach((p, idx) => {
+    productRows += `
+      <tr>
+        <td><img src="${p.images[0] || ''}" style="width:45px; height:45px; object-fit:cover; border-radius:4px;"></td>
+        <td><input type="text" class="admin-input" value="${p.name}" onchange="updateAdminProduct(${idx}, 'name', this.value)"></td>
+        <td><input type="text" class="admin-input" value="${p.currentPrice}" onchange="updateAdminProduct(${idx}, 'currentPrice', this.value)"></td>
+        <td><input type="text" class="admin-input" value="${p.oldPrice || ''}" onchange="updateAdminProduct(${idx}, 'oldPrice', this.value)"></td>
+        <td><input type="text" class="admin-input" value="${p.images[0] || ''}" onchange="updateAdminProduct(${idx}, 'images', this.value)"></td>
+        <td><button class="admin-btn admin-btn--danger" onclick="deleteAdminProduct(${idx})">Excluir</button></td>
+      </tr>
+    `;
+  });
+
+  container.innerHTML = `
+    <div class="container" style="padding-top: 30px; padding-bottom: 50px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
+        <h1 style="font-size:26px; font-weight:800; color:var(--color-text);">⚙️ Painel de Administração</h1>
+        <a href="#/" class="admin-btn">Ver Loja Ao Vivo</a>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px;">
+        <!-- Aparência & Cores -->
+        <div class="admin-card">
+          <h3>🎨 Cores e Botões</h3>
+          <form onsubmit="event.preventDefault(); saveAdminColors(this);">
+            <div class="form-group">
+              <label>Cor Principal dos Botões e Destaques (HEX):</label>
+              <div style="display:flex; gap:10px;">
+                <input type="color" value="${settings.primaryColor}" onchange="this.nextElementSibling.value = this.value">
+                <input type="text" name="primaryColor" class="admin-input" value="${settings.primaryColor}">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Cor Hover/Escura do Botão (HEX):</label>
+              <div style="display:flex; gap:10px;">
+                <input type="color" value="${settings.primaryDark}" onchange="this.nextElementSibling.value = this.value">
+                <input type="text" name="primaryDark" class="admin-input" value="${settings.primaryDark}">
+              </div>
+            </div>
+            <button type="submit" class="admin-btn admin-btn--primary">Salvar Cores</button>
+          </form>
+        </div>
+
+        <!-- Banners & Fotos -->
+        <div class="admin-card">
+          <h3>🖼️ Banners & Logo</h3>
+          <form onsubmit="event.preventDefault(); saveAdminBanners(this);">
+            <div class="form-group">
+              <label>URL da Logo da Loja:</label>
+              <input type="text" name="logoUrl" class="admin-input" value="${settings.logoUrl}">
+            </div>
+            <div class="form-group">
+              <label>URL do Banner Principal (Desktop):</label>
+              <input type="text" name="heroDesktop" class="admin-input" value="${settings.heroDesktop}">
+            </div>
+            <div class="form-group">
+              <label>URL do Banner Principal (Mobile):</label>
+              <input type="text" name="heroMobile" class="admin-input" value="${settings.heroMobile}">
+            </div>
+            <button type="submit" class="admin-btn admin-btn--primary">Salvar Banners</button>
+          </form>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px;">
+        <!-- Navbar & Rodapé -->
+        <div class="admin-card">
+          <h3>📍 Navbar & Rodapé</h3>
+          <form onsubmit="event.preventDefault(); saveAdminNavFooter(this);">
+            <div class="form-group">
+              <label>Texto da Barra Superior (Anúncio):</label>
+              <input type="text" name="announcement" class="admin-input" value="${settings.announcement}">
+            </div>
+            <div class="form-group">
+              <label>E-mail do SAC/Atendimento:</label>
+              <input type="email" name="sacEmail" class="admin-input" value="${settings.sacEmail}">
+            </div>
+            <button type="submit" class="admin-btn admin-btn--primary">Salvar Navbar/Rodapé</button>
+          </form>
+        </div>
+
+        <!-- Importar Loja por Link -->
+        <div class="admin-card">
+          <h3>🌐 Importar Loja via Link</h3>
+          <p style="font-size:12px; color:var(--color-text-muted); margin-bottom:15px;">Cole a URL de qualquer loja para importar produtos automaticamente para seu catálogo.</p>
+          <form onsubmit="event.preventDefault(); handleImportStore(this);">
+            <div class="form-group">
+              <label>Link / URL da Loja:</label>
+              <input type="text" name="storeUrl" class="admin-input" placeholder="https://minhaloja.com.br" required>
+            </div>
+            <button type="submit" class="admin-btn admin-btn--success" id="btn-import-store">⚡ Importar Produtos da Loja</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Produtos da Loja -->
+      <div class="admin-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+          <h3>📦 Gestão de Produtos (${PRODUCTS.length})</h3>
+          <button class="admin-btn admin-btn--success" onclick="addNewAdminProduct()">+ Adicionar Novo Produto</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Foto</th>
+                <th>Nome do Produto</th>
+                <th>Preço Atual</th>
+                <th>Preço Antigo</th>
+                <th>URL da Imagem</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productRows}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function saveAdminColors(form) {
+  const settings = getStoreSettings();
+  settings.primaryColor = form.primaryColor.value;
+  settings.primaryDark = form.primaryDark.value;
+  localStorage.setItem('loja_settings', JSON.stringify(settings));
+  applyStoreSettings();
+  alert('Cores atualizadas com sucesso!');
+}
+
+function saveAdminBanners(form) {
+  const settings = getStoreSettings();
+  settings.logoUrl = form.logoUrl.value;
+  settings.heroDesktop = form.heroDesktop.value;
+  settings.heroMobile = form.heroMobile.value;
+  localStorage.setItem('loja_settings', JSON.stringify(settings));
+  applyStoreSettings();
+  alert('Banners e Logo atualizados com sucesso!');
+}
+
+function saveAdminNavFooter(form) {
+  const settings = getStoreSettings();
+  settings.announcement = form.announcement.value;
+  settings.sacEmail = form.sacEmail.value;
+  localStorage.setItem('loja_settings', JSON.stringify(settings));
+  applyStoreSettings();
+  alert('Configurações de Navbar e Rodapé salvas!');
+}
+
+function updateAdminProduct(index, field, value) {
+  if (field === 'images') {
+    PRODUCTS[index].images = [value];
+  } else {
+    PRODUCTS[index][field] = value;
+  }
+  localStorage.setItem('loja_products', JSON.stringify(PRODUCTS));
+}
+
+function deleteAdminProduct(index) {
+  if (confirm('Tem certeza que deseja excluir este produto?')) {
+    PRODUCTS.splice(index, 1);
+    localStorage.setItem('loja_products', JSON.stringify(PRODUCTS));
+    renderAdminPage(document.getElementById('app'));
+  }
+}
+
+function addNewAdminProduct() {
+  const newProd = {
+    id: `custom-${Date.now()}`,
+    name: 'Novo Produto Texano',
+    oldPrice: 'R$ 399,90',
+    currentPrice: 'R$ 149,90',
+    description: 'Descrição do novo produto',
+    images: ['https://botastexanasdecountry.online/media/1784215723987-f427d613.webp']
+  };
+  PRODUCTS.unshift(newProd);
+  localStorage.setItem('loja_products', JSON.stringify(PRODUCTS));
+  renderAdminPage(document.getElementById('app'));
+}
+
+async function handleImportStore(form) {
+  const btn = document.getElementById('btn-import-store');
+  const url = form.storeUrl.value;
+  btn.disabled = true;
+  btn.textContent = 'Importando produtos...';
+  
+  try {
+    const res = await fetch('/api/admin/import-store', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (res.ok && data.products) {
+      PRODUCTS = [...data.products, ...PRODUCTS];
+      localStorage.setItem('loja_products', JSON.stringify(PRODUCTS));
+      alert(data.message || 'Loja importada com sucesso!');
+      renderAdminPage(document.getElementById('app'));
+    } else {
+      alert(data.error || 'Erro ao importar loja');
+    }
+  } catch(e) {
+    alert('Erro de conexão ao importar loja');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚡ Importar Produtos da Loja';
+  }
 }
 
 // ==========================================================================
