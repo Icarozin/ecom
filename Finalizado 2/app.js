@@ -752,7 +752,10 @@ function renderAdminPage(container) {
       <div class="admin-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
           <h3>📦 Gestão de Produtos (${PRODUCTS.length})</h3>
-          <button class="admin-btn admin-btn--success" onclick="addNewAdminProduct()">+ Adicionar Novo Produto</button>
+          <div style="display:flex; gap: 10px; align-items: center;">
+            <input type="text" class="admin-input" placeholder="Buscar produto..." value="${searchTerm}" oninput="renderAdminPage(document.getElementById('app'), this.value)" style="max-width: 250px;">
+            <button class="admin-btn admin-btn--success" onclick="addNewAdminProduct()">+ Adicionar Novo Produto</button>
+          </div>
         </div>
         <div style="overflow-x:auto;">
           <table class="admin-table">
