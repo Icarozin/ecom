@@ -823,6 +823,10 @@ function deleteAdminProduct(index) {
     localStorage.setItem('loja_products', JSON.stringify(PRODUCTS));
     renderAdminPage(document.getElementById('app'));
   }
+}(index, 1);
+    localStorage.setItem('loja_products', JSON.stringify(PRODUCTS));
+    renderAdminPage(document.getElementById('app'));
+  }
 }
 
 function addNewAdminProduct() {
