@@ -649,11 +649,12 @@ function renderView() {
 // ==========================================================================
 // PAINEL ADMINISTRATIVO
 // ==========================================================================
-function renderAdminPage(container) {
+function renderAdminPage(container, searchTerm = '') {
   const settings = getStoreSettings();
   
   let productRows = '';
   PRODUCTS.forEach((p, idx) => {
+    if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase())) return;
     productRows += `
       <tr>
         <td><img src="${p.images[0] || ''}" style="width:45px; height:45px; object-fit:cover; border-radius:4px;"></td>
