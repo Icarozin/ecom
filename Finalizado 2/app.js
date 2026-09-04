@@ -799,6 +799,45 @@ function saveAdminBanners(form) {
   alert('Banners e Logo atualizados com sucesso!');
 }
 
+async function handleAdminImageUpload(inputElement, fieldName) {
+  if (inputElement.files && inputElement.files[0]) {
+    try {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const form = inputElement.closest('form');
+        if (form && form[fieldName]) {
+          form[fieldName].value = e.target.result;
+        }
+      };
+      reader.readAsDataURL(inputElement.files[0]);
+    } catch (e) {
+      console.error('Erro ao ler a imagem:', e);
+      alert('Erro ao carregar a imagem.');
+    }
+  }
+}
+
+async function handleAdminProductImageUpload(inputElement, index) {
+  if (inputElement.files && inputElement.files[0]) {
+    try {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const textInput = inputElement.parentElement.querySelector('input[type="text"]');
+        if (textInput) {
+          textInput.value = e.target.result;
+          updateAdminProduct(index, 'images', e.target.result);
+          const imgPreview = inputElement.closest('tr').querySelector('td img');
+          if (imgPreview) imgPreview.src = e.target.result;
+        }
+      };
+      reader.readAsDataURL(inputElement.files[0]);
+    } catch (e) {
+      console.error('Erro ao ler a imagem do produto:', e);
+      alert('Erro ao carregar a imagem do produto.');
+    }
+  }
+}
+
 function saveAdminNavFooter(form) {
   const settings = getStoreSettings();
   settings.announcement = form.announcement.value;
