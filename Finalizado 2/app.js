@@ -368,13 +368,20 @@ const RAW_PRODUCTS = [
   }
 ];
 
-// Limpa a logo das galerias de imagens
-const PRODUCTS = RAW_PRODUCTS.map(p => {
-  return {
-    ...p,
-    images: p.images.filter(img => !img.includes('1784919758919-3d0266e3.png'))
-  };
-});
+// Carrega produtos do localStorage (modificados/importados) ou inicializa do padrão
+let savedProducts = null;
+try {
+  savedProducts = JSON.parse(localStorage.getItem('loja_products'));
+} catch (e) {}
+
+let PRODUCTS = (savedProducts && Array.isArray(savedProducts) && savedProducts.length > 0)
+  ? savedProducts
+  : RAW_PRODUCTS.map(p => {
+      return {
+        ...p,
+        images: p.images.filter(img => !img.includes('1784919758919-3d0266e3.png'))
+      };
+    });
 
 // ==========================================================================
 // ESTADO DO CARRINHO (CART STATE)
